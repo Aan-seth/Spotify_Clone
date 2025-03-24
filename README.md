@@ -11,9 +11,6 @@ A simple Spotify-like music player built with **HTML**, **CSS**, and **JavaScrip
 - 📱 Hamburger menu for navigation
 - 🎵 Display current song details and time
 
-## 📸 Preview
-![Spotify Clone Preview](https://via.placeholder.com/800x400.png?text=Spotify+Clone+Preview)
-
 ## 🛠️ Tech Stack
 - **HTML** – For structure and content
 - **CSS** – For styling and layout
