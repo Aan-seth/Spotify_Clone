@@ -1,179 +1,175 @@
-console.log("JavaScript is running...");
+console.log("javascript likhege ab");
 let currentSong = new Audio();
-let songs = [];
-let currentFolder = "public/songs";
-let currentIndex = 0; // Track currently playing song index
+let songs;
+let currentfolder;
 
 function secondsToMinutesSeconds(seconds) {
-    if (isNaN(seconds) || seconds < 0) return "00:00";
-    let minutes = Math.floor(seconds / 60);
-    let remainingSeconds = Math.floor(seconds % 60);
+    if (isNaN(seconds) || seconds < 0) {
+        return "00:00";
+    }
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
     return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
 }
 
-async function getSongs(folder) {
-    try {
-        currentFolder = `public/${folder}`;
-        let response = await fetch(`${currentFolder}/`);
-        if (!response.ok) throw new Error("Failed to fetch songs");
-        let text = await response.text();
-
-        let div = document.createElement("div");
-        div.innerHTML = text;
-        let anchors = div.getElementsByTagName("a");
-        songs = Array.from(anchors)
-            .filter(a => a.href.endsWith(".mp3"))
-            .map(a => decodeURIComponent(a.href.split(`/${folder}/`)[1]));
-
-        updateSongListUI(songs);
-    } catch (error) {
-        console.error("Error fetching songs:", error);
+async function getsongs(folder) {
+    currentfolder = folder;
+    let a = await fetch(`/public/${folder}/`);
+    let response = await a.text();
+    let div = document.createElement("div");
+    div.innerHTML = response;
+    let as = div.getElementsByTagName("a");
+    songs = [];
+    for (let index = 0; index < as.length; index++) {
+        const element = as[index];
+        if (element.href.endsWith(".mp3")) {
+            songs.push(decodeURIComponent(element.href.split(`/${folder}/`)[1]));
+        }
     }
-}
-
-function updateSongListUI(songs) {
-    let songList = document.querySelector(".songlist ul");
-    songList.innerHTML = songs.map(song => `
-        <li>
-            <img class="invert" src="public/img/music.svg" alt="">
-            <div class="info">
-                <div>${song.replaceAll("%20", " ")}</div>
-                <div>Aanchal Seth</div>
-            </div>
-            <div class="playnow">
-                <span>Play Now</span>
-                <img class="invert" src="public/img/play.svg" alt="">
-            </div>
-        </li>`).join("");
-
-    document.querySelectorAll(".songlist li").forEach((e, index) => {
-        e.addEventListener("click", () => playMusic(index));
+    
+    let songul = document.querySelector(".songlist ul");
+    songul.innerHTML = "";
+    for (const song of songs) {
+        songul.innerHTML += `
+            <li> 
+                <img class="invert" src="/public/img/music.svg" alt="">
+                <div class="info">
+                    <div>${song.replaceAll("%20", " ")}</div>
+                    <div>Aanchal Seth</div>
+                </div>
+                <div class="playnow">
+                    <span>Play Now</span>
+                    <img class="invert" src="/public/img/play.svg" alt="">
+                </div>
+            </li>`;
+    }
+    
+    document.querySelectorAll(".songlist li").forEach(e => {
+        e.addEventListener("click", () => {
+            playMusic(e.querySelector(".info>div").innerText.trim());
+        });
     });
+    return songs;
 }
 
-const playMusic = (index, pause = false) => {
-    if (index < 0 || index >= songs.length) return;
-
-    currentIndex = index;  // Update global index tracker
-    currentSong.src = `${currentFolder}/${songs[currentIndex]}`;
-
+const playMusic = (track, pause = false) => {
+    currentSong.src = `/public/${currentfolder}/` + track;
     if (!pause) {
         currentSong.play();
-        document.getElementById("play").src = "public/img/pause.svg";
+        document.getElementById("play").src = "/public/img/pause.svg";
     }
-
-    document.querySelector(".songinfo").innerText = decodeURI(songs[currentIndex]);
+    document.querySelector(".songinfo").innerText = track;
     document.querySelector(".songtime").innerText = "00:00 / 00:00";
 };
 
 async function displayAlbums() {
-    try {
-        let response = await fetch("public/songs/");
-        if (!response.ok) throw new Error("Failed to fetch albums");
-        let text = await response.text();
+    let a = await fetch(`/public/songs/`);
+    let response = await a.text();
+    let div = document.createElement("div");
+    div.innerHTML = response;
+    let anchors = div.getElementsByTagName("a");
+    let cardContainer = document.querySelector(".cardContainer");
 
-        let div = document.createElement("div");
-        div.innerHTML = text;
-        let anchors = div.getElementsByTagName("a");
-        let cardContainer = document.querySelector(".cardContainer");
-
-        cardContainer.innerHTML = "";
-        for (let e of anchors) {
-            if (e.href.includes("/songs/")) {
-                let folder = e.href.split("/").slice(-1)[0];
-                let albumData = await fetch(`public/songs/${folder}/info.json`);
-                if (!albumData.ok) continue;
-                let metadata = await albumData.json();
-
-                cardContainer.innerHTML += `
+    for (const e of anchors) {
+        if (e.href.includes("/songs/")) {
+            let folder = e.href.split("/").slice(-1)[0];
+            let metadata = await fetch(`/public/songs/${folder}/info.json`);
+            let response = await metadata.json();
+            
+            cardContainer.innerHTML += `
                 <div data-folder="${folder}" class="card rounded">
                     <div class="play">
-                        <img src="public/img/play.svg" alt="">
+                        <img src="/public/img/play.svg" alt="">
                     </div>
-                    <img src="public/songs/${folder}/cover.jpg" alt="">
-                    <h2>${metadata.title}</h2>
-                    <p>${metadata.description}</p>
+                    <img src="/public/songs/${folder}/cover.jpg" alt="">
+                    <h2>${response.title}</h2>
+                    <p>${response.description}</p>
                 </div>`;
-            }
         }
-
-        document.querySelectorAll(".card").forEach(e => {
-            e.addEventListener("click", async () => {
-                await getSongs(`songs/${e.dataset.folder}`);
-                playMusic(0);
-            });
-        });
-    } catch (error) {
-        console.error("Error fetching albums:", error);
     }
+    
+    document.querySelectorAll(".card").forEach(e => {
+        e.addEventListener("click", async () => {
+            songs = await getsongs(`songs/${e.dataset.folder}`);
+            playMusic(songs[0]);
+        });
+    });
 }
 
 async function main() {
-    await getSongs("songs/allmoodsongs");
-    playMusic(0, true);
+    await getsongs("songs/allmoodsongs");
+    playMusic(songs[0], true);
     displayAlbums();
-
+    
     document.getElementById("play").addEventListener("click", () => {
         if (currentSong.paused) {
             currentSong.play();
-            document.getElementById("play").src = "public/img/pause.svg";
+            document.getElementById("play").src = "/public/img/pause.svg";
         } else {
             currentSong.pause();
-            document.getElementById("play").src = "public/img/play.svg";
-        }
-    });
-
-    currentSong.addEventListener("timeupdate", () => {
-        if (!isNaN(currentSong.duration)) {
-            document.querySelector(".songtime").innerText =
-                `${secondsToMinutesSeconds(currentSong.currentTime)} / ${secondsToMinutesSeconds(currentSong.duration)}`;
-            document.querySelector(".circle").style.left =
-                (currentSong.currentTime / currentSong.duration) * 100 + "%";
-        }
-    });
-
-    document.querySelector(".seekbar").addEventListener("click", e => {
-        let percent = (e.clientX - e.target.getBoundingClientRect().left) / e.target.clientWidth * 100;
-        document.querySelector(".circle").style.left = percent + "%";
-        currentSong.currentTime = (currentSong.duration * percent) / 100;
-    });
-
-    document.querySelector(".hamburger").addEventListener("click", () => {
-        document.querySelector(".left").style.left = "0";
-    });
-
-    document.querySelector(".close").addEventListener("click", () => {
-        document.querySelector(".left").style.left = "-120%";
-    });
-
-    document.getElementById("previous").addEventListener("click", () => {
-        if (currentIndex > 0) {
-            currentIndex--;
-            playMusic(currentIndex);
-        }
-    });
-
-    document.getElementById("next").addEventListener("click", () => {
-        if (currentIndex < songs.length - 1) {
-            currentIndex++;
-            playMusic(currentIndex);
-        }
-    });
-
-    document.querySelector(".range").getElementsByTagName("input")[0].addEventListener("change", (e) => { 
-        currentSong.volume = parseInt(e.target.value) / 100 
-    });
-
-    document.querySelector(".volume img").addEventListener("click", () => {
-        if (currentSong.muted) {
-            currentSong.muted = false;
-            document.querySelector(".volume img").src = "public/img/volume.svg"; // Unmute icon
-        } else {
-            currentSong.muted = true;
-            document.querySelector(".volume img").src = "public/img/mute.svg"; // Mute icon
+            document.getElementById("play").src = "/public/img/play.svg";
         }
     });
     
+    currentSong.addEventListener("timeupdate", () => {
+        document.querySelector(".songtime").innerText = `${secondsToMinutesSeconds(currentSong.currentTime)}/ ${secondsToMinutesSeconds(currentSong.duration)}`;
+        document.querySelector(".circle").style.left = (currentSong.currentTime / currentSong.duration) * 100 + "%";
+    });
+    
+    document.querySelector(".seekbar").addEventListener("click", (e) => {
+        let percent = (e.offsetX / e.target.clientWidth) * 100;
+        document.querySelector(".circle").style.left = percent + "%";
+        currentSong.currentTime = (currentSong.duration * percent) / 100;
+    });
+    
+    document.querySelector(".hamburger").addEventListener("click", () => {
+        document.querySelector(".left").style.left = "0";
+    });
+    
+    document.querySelector(".close").addEventListener("click", () => {
+        document.querySelector(".left").style.left = "-120%";
+    });
+    
+    document.getElementById("previous").addEventListener("click", () => {
+        let currentSongName = decodeURIComponent(currentSong.src.split("/").pop()); // Extract filename
+        let index = songs.indexOf(currentSongName);
+        if (index > 0) {
+            playMusic(songs[index - 1]);
+        }
+    });
+    
+    document.getElementById("next").addEventListener("click", () => {
+        let currentSongName = decodeURIComponent(currentSong.src.split("/").pop()); // Extract filename
+        let index = songs.indexOf(currentSongName);
+        if (index < songs.length - 1) {
+            playMusic(songs[index + 1]);
+        }
+    });
+    
+    
+    document.querySelector(".range input").addEventListener("input", (e) => {
+        currentSong.volume = e.target.value / 100;
+    });
+    
+    document.querySelector(".volume img").addEventListener("click", (e) => {
+        if (e.target.src.includes("volume.svg")) {
+            e.target.src = "/public/img/mute.svg";
+            currentSong.volume = 0;
+        } else {
+            e.target.src = "/public/img/volume.svg";
+            currentSong.volume = 0.1;
+        }
+    });
+    document.getElementById("volume-icon").addEventListener("click", () => {
+        if (currentSong.muted) {
+            currentSong.muted = false;
+            document.getElementById("volume-icon").src = "public/img/volume.svg"; // Unmute icon
+        } else {
+            currentSong.muted = true;
+            document.getElementById("volume-icon").src = "public/img/mute.svg"; // Mute icon
+        }
+    });
+
     
 }
 
